@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import type { AdKitData } from '../types';
 
@@ -17,8 +16,8 @@ const adKitSchema = {
         title: { type: Type.STRING },
         description: { type: Type.STRING },
         price: { type: Type.STRING },
-        beds: { type: Type.INTEGER, description: "Number of bedrooms. Use 'TBD' string if not found." },
-        baths: { type: Type.INTEGER, description: "Number of bathrooms. Use 'TBD' string if not found." },
+        beds: { type: Type.STRING, description: "Number of bedrooms. Use 'TBD' string if not found." },
+        baths: { type: Type.STRING, description: "Number of bathrooms. Use 'TBD' string if not found." },
         area: { type: Type.STRING, description: "e.g., '250 sqm'. Use 'TBD' if not found." },
         propertyType: { type: Type.STRING },
         location: { type: Type.STRING },
@@ -70,40 +69,46 @@ const adKitSchema = {
         },
       },
     },
-    videoPlan: {
+    Short_Form_Video: {
       type: Type.OBJECT,
+      description: "A plan for a short-form video ad, including 6 clip prompts and a voiceover.",
       properties: {
-        storyboard: {
+        Clip_Prompts_6x5s: {
           type: Type.ARRAY,
+          description: "An array of exactly 6 video clip prompts for a generator like Sora.",
           items: {
             type: Type.OBJECT,
             properties: {
-              timestamp: { type: Type.STRING },
-              visual: { type: Type.STRING },
-              vo: { type: Type.STRING },
-              overlayText: { type: Type.STRING },
-            },
-          },
-        },
-        soraHandoff: {
-          type: Type.OBJECT,
-          properties: {
-            clips: {
-              type: Type.ARRAY,
-              items: {
+              id: { type: Type.INTEGER, description: "Clip sequence number (1-6)." },
+              prompt: { type: Type.STRING, description: "Concise Sora-ready scene description." },
+              continuity_tags: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Tokens for visual consistency. CRUCIAL: Be highly specific and evocative. Derive from unique property features. AVOID generic terms like 'luxury', 'modern'. INSTEAD, use tangible details: materials (e.g., 'warm oak floors'), lighting (e.g., 'golden hour sunlight'), mood (e.g., 'serene garden view'). These define the video's aesthetic." },
+              on_screen_text: { type: Type.STRING, description: "Short overlay text, max 6 words." },
+              sfx_suggestion: { type: Type.STRING, description: "e.g., 'key click + soft whoosh'." },
+              transition_to_next: { type: Type.STRING, description: "e.g., 'match cut on door close'." },
+              sora_settings: {
                 type: Type.OBJECT,
+                description: "Optional, safe hints for the video generator.",
                 properties: {
-                  duration: { type: Type.NUMBER },
-                  prompt: { type: Type.STRING },
-                  vo: { type: Type.STRING },
-                  subtitles: { type: Type.STRING },
+                  duration_seconds: { type: Type.NUMBER, description: "Should be 5." },
+                  ar: { type: Type.STRING, description: "Aspect ratio, e.g., '9:16'." },
+                  fps: { type: Type.NUMBER, description: "Frames per second, e.g., 24." },
+                  motion: { type: Type.STRING, description: "e.g., 'slow push-in'." },
+                  camera: { type: Type.STRING, description: "e.g., '35mm, waist-up'." },
+                  lighting: { type: Type.STRING, description: "e.g., 'bright natural window light'." },
+                  negatives: { type: Type.ARRAY, items: { type: Type.STRING }, description: "e.g., ['blurry', 'watermark']." },
                 },
               },
+              alt_variations: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Two alternate prompts for retries." },
             },
-            aspectRatio: { type: Type.STRING, description: "e.g., '9:16' for vertical video" },
           },
         },
       },
+    },
+    Voiceover: {
+        type: Type.OBJECT,
+        properties: {
+            "30s_VO": { type: Type.STRING, description: "A single 30-second voiceover script, ~90 words, that aligns with the six clips." }
+        }
     },
     platformPacks: {
       type: Type.ARRAY,
@@ -145,55 +150,58 @@ const adKitSchema = {
 const createMasterPrompt = (propertyDescription: string, market: string, currency: string): string => {
   return `
     You are AdForge RE, a production-grade, real-estate product-marketing generator.
-    Your task is to analyze the following property description and generate a complete ad kit.
+    Your task is to analyze the following property description and generate a complete ad kit as a single, valid JSON object that adheres strictly to the provided schema.
 
-    **Market Context:**
-    - Primary Market: ${market}
-    - Currency: ${currency}
-    - Language Style: English, concise, benefits-first.
+    RULES:
+    1.  **Full Completion**: Populate every single field in the schema. Do not omit any part of the structure.
+    2.  **No Placeholders**: Do not use placeholders like "TBD" or "N/A" unless explicitly permitted for a specific field in the schema description. If you cannot find information, infer it creatively and logically based on the context. For 'questionsToConfirm', list what you had to infer.
+    3.  **Market & Currency Context**: All financial data, market analysis, and cultural references must be tailored to the specified Target Market ('${market}') and Currency ('${currency}').
+    4.  **Creative & Compelling Copy**: The copy should be persuasive and professional, designed to attract buyers.
+    5.  **Investor Metrics**: Calculations should be realistic estimates based on the property type and market. Clearly state your assumptions.
+    6.  **Personas**: Generate three distinct, well-defined buyer personas relevant to the property and market.
+    7.  **Video Plan**: The 6 Sora clip prompts must tell a cohesive, compelling visual story. Ensure the voiceover script perfectly syncs with the sequence of clips.
+    8.  **Visually Rich Image Prompts**: For 'stagingPresets' and 'imageGenPrompts', create highly descriptive and artistic prompts. Specify details like:
+        - **Lighting**: e.g., 'soft morning light streaming through windows', 'dramatic sunset glow', 'warm ambient interior lighting'.
+        - **Camera Angle**: e.g., 'wide-angle view', 'eye-level shot', 'low-angle shot looking up'.
+        - **Artistic Style**: e.g., 'photorealistic, cinematic style, shot on Portra 400 film', 'minimalist aesthetic', 'impressionistic'.
+        - **Composition**: e.g., 'rule of thirds', 'leading lines from the hallway'.
+        The goal is to generate varied, professional, and visually stunning images.
 
-    **Core Rules:**
-    1.  **NEVER** hallucinate prices, specs, or legal claims.
-    2.  If any piece of information is missing or ambiguous from the provided text, use the string "TBD" for that field.
-    3.  For every "TBD" field, add a clear, actionable question to the 'questionsToConfirm' list for the user to clarify.
-    4.  All generated content must be tailored to the specified market and currency.
-    5.  Investor metrics should be based on conservative, realistic estimates for the specified market. Clearly state your assumptions.
-
-    **Property Description to Analyze:**
+    PROPERTY DESCRIPTION:
     ---
     ${propertyDescription}
     ---
-
-    Now, generate the complete ad kit based on the schema provided.
   `;
 };
 
 export const generateAdKit = async (propertyDescription: string, market: string, currency: string): Promise<AdKitData> => {
-  if (!process.env.API_KEY) {
-    throw new Error("Gemini API key is not configured.");
-  }
-  const model = 'gemini-2.5-flash';
-  const prompt = createMasterPrompt(propertyDescription, market, currency);
-
   try {
+    const masterPrompt = createMasterPrompt(propertyDescription, market, currency);
+
     const response = await ai.models.generateContent({
-      model: model,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: adKitSchema,
-      }
+        model: "gemini-2.5-flash",
+        contents: masterPrompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: adKitSchema,
+            temperature: 0.8,
+        }
     });
 
-    const jsonString = response.text.trim();
-    
-    // Sometimes the model might wrap the JSON in markdown backticks, so we clean it.
-    const cleanedJsonString = jsonString.replace(/^```json\s*|```$/g, '');
-    
-    const parsedData = JSON.parse(cleanedJsonString);
-    return parsedData as AdKitData;
-  } catch (error) {
-    console.error("Error calling Gemini API:", error);
-    throw new Error("The AI model failed to generate a valid response. Please check the property description and try again.");
+    const jsonText = response.text.trim();
+    const adKit = JSON.parse(jsonText) as AdKitData;
+    return adKit;
+
+  } catch (error: any) {
+    console.error("Error generating Ad Kit:", error);
+    let errorMessage = "An unknown error occurred while generating the ad kit.";
+    if (error.message) {
+      errorMessage = error.message;
+    }
+    // Attempt to parse more detailed error from Google GenAI response
+    if (error.response && error.response.data && error.response.data.error) {
+        errorMessage = error.response.data.error.message;
+    }
+    throw new Error(`Gemini API Error: ${errorMessage}`);
   }
 };

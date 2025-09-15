@@ -11,7 +11,7 @@ interface StagingAndImagePromptsSectionProps {
 
 export const StagingAndImagePromptsSection: React.FC<StagingAndImagePromptsSectionProps> = ({ presets, prompts }) => {
   return (
-    <Accordion title="Virtual Staging & Image Prompts" icon={<Icons.image />}>
+    <Accordion title="Virtual Staging & Image Prompts" icon={<Icons.image />} id="staging">
         <div className="space-y-6">
              <div>
                 <h4 className="font-semibold text-lg font-display text-indigo-400 mb-3">AI Image Generation Prompts</h4>

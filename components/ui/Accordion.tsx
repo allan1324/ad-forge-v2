@@ -1,17 +1,20 @@
 import React, { useState, ReactNode } from 'react';
 
 interface AccordionProps {
-  title: string;
+  title: ReactNode;
   children: ReactNode;
   icon: ReactNode;
   defaultOpen?: boolean;
+  // FIX: Added optional id prop to be used for anchors.
+  id?: string;
 }
 
-export const Accordion: React.FC<AccordionProps> = ({ title, children, icon, defaultOpen = false }) => {
+export const Accordion: React.FC<AccordionProps> = ({ title, children, icon, defaultOpen = false, id }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border border-slate-800 bg-slate-900/50 rounded-lg shadow-lg">
+    // FIX: Apply the id to the root element.
+    <div id={id} className="border border-slate-800 bg-slate-900/50 rounded-lg shadow-lg">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex justify-between items-center p-4 hover:bg-slate-800/60 transition duration-200"
