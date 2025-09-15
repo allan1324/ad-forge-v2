@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 import { Insights } from '../../types';
 import { Accordion } from '../ui/Accordion';
@@ -13,24 +11,30 @@ interface InsightsSectionProps {
 export const InsightsSection: React.FC<InsightsSectionProps> = ({ data }) => {
   return (
     <Accordion title="Market Insights" icon={<Icons.lightbulb />} id="insights">
-        <div className="space-y-6">
-            <div className="relative">
-                <CopyButton textToCopy={data.neighborhoodSummary} />
-                <h4 className="font-semibold text-lg font-display text-indigo-400 mb-2">Neighborhood Summary</h4>
-                <p className="text-slate-300 pr-10">{data.neighborhoodSummary}</p>
+        <div className="af-space-y-6">
+            <div className="af-group">
+                <div className="af-flex af-justify-between af-items-start">
+                    <h4 className="af-font-semibold af-text-lg af-font-display af-text-accent af-mb-2">Neighborhood Summary</h4>
+                    <CopyButton textToCopy={data.neighborhoodSummary} className="af-opacity-0 group-hover:af-opacity-100 af-transition-opacity" />
+                </div>
+                <p className="af-text-text-lo">{data.neighborhoodSummary}</p>
             </div>
-            <div className="relative">
-                <CopyButton textToCopy={data.priceRationale} />
-                <h4 className="font-semibold text-lg font-display text-indigo-400 mb-2">Price Position Analysis</h4>
-                <div className="bg-slate-800/50 p-4 rounded-lg pr-10">
-                    <p className="font-bold text-xl text-white">{data.pricePosition}</p>
-                    <p className="text-slate-400">{data.priceRationale}</p>
+            <div className="af-group">
+                <div className="af-flex af-justify-between af-items-start">
+                    <h4 className="af-font-semibold af-text-lg af-font-display af-text-accent af-mb-2">Price Position Analysis</h4>
+                    <CopyButton textToCopy={`${data.pricePosition}\n\n${data.priceRationale}`} className="af-opacity-0 group-hover:af-opacity-100 af-transition-opacity" />
+                </div>
+                <div className="af-bg-surface af-border af-border-line af-p-4 af-rounded-lg">
+                    <p className="af-font-bold af-text-xl af-text-text-hi">{data.pricePosition}</p>
+                    <p className="af-text-text-lo">{data.priceRationale}</p>
                 </div>
             </div>
-            <div className="relative">
-                <CopyButton textToCopy={data.stockSearchQueries.join('\n')} />
-                <h4 className="font-semibold text-lg font-display text-indigo-400 mb-2">Suggested Stock Search Queries</h4>
-                <ul className="list-disc list-inside text-slate-300 space-y-1 pr-10">
+            <div className="af-group">
+                <div className="af-flex af-justify-between af-items-start">
+                    <h4 className="af-font-semibold af-text-lg af-font-display af-text-accent af-mb-2">Suggested Stock Search Queries</h4>
+                    <CopyButton textToCopy={data.stockSearchQueries.join('\n')} className="af-opacity-0 group-hover:af-opacity-100 af-transition-opacity" />
+                </div>
+                <ul className="af-list-disc af-list-inside af-text-text-lo af-space-y-1">
                 {data.stockSearchQueries.map((query, index) => (
                     <li key={index}>"{query}"</li>
                 ))}

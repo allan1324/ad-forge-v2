@@ -2,6 +2,7 @@ import React from 'react';
 import { AdKitData } from '../../types';
 import { Icons } from '../ui/Icons';
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard';
+import { Button } from '../ui/Button';
 
 interface ExportSectionProps {
   data: AdKitData;
@@ -36,24 +37,24 @@ export const ExportSection: React.FC<ExportSectionProps> = ({ data }) => {
 
 
   return (
-    <div className="p-4 bg-slate-900/50 rounded-lg border border-slate-800">
-        <h3 className="font-semibold text-lg text-white mb-4 flex items-center gap-2 font-display">
+    <div className="af-p-4 af-bg-panel af-rounded-lg af-border af-border-line">
+        <h3 className="af-font-semibold af-text-lg af-text-text-hi af-mb-4 af-flex af-items-center af-gap-2 af-font-display">
             <Icons.download />
             Export Options
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-             <button
+        <div className="af-grid af-grid-cols-1 sm:af-grid-cols-2 af-gap-3">
+             <Button
                 onClick={() => copy(fullText)}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition text-sm"
+                variant="secondary"
             >
                 {isCopied ? 'Copied!' : 'Copy All as Text'}
-            </button>
-            <button
+            </Button>
+            <Button
                 onClick={downloadJson}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition text-sm"
+                variant="secondary"
             >
                 Download JSON
-            </button>
+            </Button>
         </div>
     </div>
   );

@@ -5,7 +5,6 @@ interface AccordionProps {
   children: ReactNode;
   icon: ReactNode;
   defaultOpen?: boolean;
-  // FIX: Added optional id prop to be used for anchors.
   id?: string;
 }
 
@@ -13,19 +12,18 @@ export const Accordion: React.FC<AccordionProps> = ({ title, children, icon, def
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    // FIX: Apply the id to the root element.
-    <div id={id} className="border border-slate-800 bg-slate-900/50 rounded-lg shadow-lg">
+    <div id={id} className="af-border af-border-line af-bg-panel af-rounded-lg af-shadow-soft">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex justify-between items-center p-4 hover:bg-slate-800/60 transition duration-200"
+        className="af-w-full af-flex af-justify-between af-items-center af-p-4 hover:af-bg-white/5 af-transition af-duration-200"
         aria-expanded={isOpen}
       >
-        <div className="flex items-center gap-3">
-            <span className="text-indigo-400">{icon}</span>
-            <span className="font-bold text-lg text-left text-white font-display tracking-wide">{title}</span>
+        <div className="af-flex af-items-center af-gap-3">
+            <span className="af-text-accent">{icon}</span>
+            <span className="af-font-bold af-text-lg af-text-left af-text-text-hi af-font-display af-tracking-wide">{title}</span>
         </div>
         <svg
-          className={`w-6 h-6 transform transition-transform duration-300 text-slate-400 ${isOpen ? 'rotate-180' : ''}`}
+          className={`af-w-6 af-h-6 af-transform af-transition-transform af-duration-300 af-text-text-lo ${isOpen ? 'af-rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -35,12 +33,12 @@ export const Accordion: React.FC<AccordionProps> = ({ title, children, icon, def
         </svg>
       </button>
       <div
-        className={`grid transition-all duration-500 ease-in-out ${
-          isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+        className={`af-grid af-transition-all af-duration-500 af-ease-in-out ${
+          isOpen ? 'af-grid-rows-[1fr] af-opacity-100' : 'af-grid-rows-[0fr] af-opacity-0'
         }`}
       >
-        <div className="overflow-hidden">
-          <div className="p-4 md:p-6 border-t border-slate-800">{children}</div>
+        <div className="af-overflow-hidden">
+          <div className="af-p-4 md:af-p-6 af-border-t af-border-line">{children}</div>
         </div>
       </div>
     </div>

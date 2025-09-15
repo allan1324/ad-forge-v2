@@ -9,11 +9,11 @@ export const FetchingProgress: React.FC<FetchingProgressProps> = ({ progress, st
   const percentage = Math.round(progress * 100);
 
   return (
-    <div className="space-y-3 p-4 bg-slate-800/50 border border-slate-700 rounded-lg animate-pulse once">
-      <p className="text-sm text-center text-slate-300">{statusText || 'Initiating fetch...'}</p>
-      <div className="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
+    <div className="af-space-y-2 af-p-3 af-bg-surface af-border af-border-line af-rounded-lg">
+      <p className="af-text-sm af-text-center af-text-text-lo">{statusText || 'Initiating fetch...'}</p>
+      <div className="af-w-full af-bg-panel af-rounded-full af-h-2 af-overflow-hidden">
         <div 
-          className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-out" 
+          className="af-bg-accent af-h-2 af-rounded-full af-transition-all af-duration-500 af-ease-out" 
           style={{ width: `${percentage}%` }}
         ></div>
       </div>

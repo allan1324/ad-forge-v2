@@ -3,32 +3,107 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Colors from Design Tokens */
-    --color-brand-primary: #00E5C3;
-    --color-brand-ink: #E6F7F3;
-    --color-brand-bg: #0B0F14;
-    --color-brand-surface: #121821;
-    --color-brand-muted: #8A94A1;
-    --color-brand-accent: #8AFFE7;
-  }
-
   html {
-    scroll-behavior: smooth;
+    @apply af-h-full af-scroll-smooth;
+  }
+  body {
+    @apply af-h-full af-font-sans af-text-text-lo af-antialiased;
+    background-color: theme('colors.ink'); /* Fallback */
   }
 
-  body {
-    @apply text-brand-muted font-sans antialiased;
-    background-color: #0B0F14; /* Fallback */
-    background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(18, 24, 33, 0.9), #0B0F14);
+  #adforge-root {
+    @apply af-relative af-h-full af-overflow-hidden;
+    background-color: theme('colors.ink');
+    background-image: linear-gradient(
+      -45deg,
+      theme('colors.accent / 5%'),
+      theme('colors.surface / 50%'),
+      theme('colors.accent / 10%'),
+      theme('colors.ink')
+    );
+    background-size: 400% 400%;
+    animation: theme('animation.background-pan') 15s ease infinite;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display text-brand-ink;
+    @apply af-font-display af-text-text-hi;
   }
   
   /* Accessible Focus Ring */
   *:focus-visible {
-    @apply outline-none ring-2 ring-brand-primary ring-offset-2 ring-offset-brand-bg rounded-md;
+    @apply af-outline-none af-ring-2 af-ring-accent af-ring-offset-2 af-ring-offset-surface af-rounded-md;
   }
+}
+
+@layer components {
+  /* Layout */
+  .af-container {
+    @apply af-max-w-7xl af-mx-auto af-px-4 sm:af-px-6 lg:af-px-8 af-py-8 lg:af-py-12;
+  }
+
+  /* Card System */
+  .af-card {
+    @apply af-rounded-card af-bg-panel af-shadow-soft;
+    box-shadow: 0 0 0 1px theme('colors.line / 50%'), theme('boxShadow.soft');
+  }
+  .af-card-header {
+    @apply af-flex af-flex-col af-space-y-1.5 af-p-6 af-border-b af-border-line;
+  }
+  .af-card-title {
+    @apply af-text-lg af-font-semibold af-leading-none af-tracking-tight;
+  }
+  .af-card-content {
+    @apply af-p-6 af-pt-4;
+  }
+
+  /* Form Controls */
+  .af-input {
+    @apply af-flex af-h-10 af-w-full af-rounded-input af-border af-border-line af-bg-panel af-px-3 af-py-2 af-text-sm af-text-text-hi placeholder:af-text-text-lo focus-visible:af-outline-none focus-visible:af-ring-2 focus-visible:af-ring-accent disabled:af-cursor-not-allowed disabled:af-opacity-50 af-transition-colors;
+  }
+  .af-textarea {
+    @apply af-flex af-min-h-[80px] af-w-full af-rounded-input af-border af-border-line af-bg-panel af-px-3 af-py-2 af-text-sm af-text-text-hi placeholder:af-text-text-lo focus-visible:af-outline-none focus-visible:af-ring-2 focus-visible:af-ring-accent disabled:af-cursor-not-allowed disabled:af-opacity-50 af-transition-colors;
+  }
+
+  /* Button System */
+  .af-button {
+    @apply af-inline-flex af-items-center af-justify-center af-rounded-button af-font-sans af-font-semibold af-transition-all af-duration-200 af-ease-custom-ease focus-visible:af-outline-none focus-visible:af-ring-2 focus-visible:af-ring-accent disabled:af-opacity-40 disabled:af-pointer-events-none;
+  }
+  .af-button:not(:disabled) {
+    @apply af-transform active:af-scale-95;
+  }
+
+  /* Sizes */
+  .af-button--sz-default { @apply af-h-10 af-py-2 af-px-4 af-text-sm; }
+  .af-button--sz-sm { @apply af-h-9 af-px-3 af-text-sm; }
+  .af-button--sz-lg { @apply af-h-12 af-px-6 af-text-base; }
+
+  /* Variants */
+  .af-button--default {
+    @apply af-text-ink af-shadow-soft;
+    background-image: linear-gradient(to right, theme('colors.accent') 0%, #00f0d0 50%, theme('colors.accent') 100%);
+    background-size: 200% auto;
+    transition: background-position 0.4s cubic-bezier(.2,.8,.2,1), box-shadow 0.4s cubic-bezier(.2,.8,.2,1), transform 0.1s ease-out;
+  }
+  .af-button--default:not(:disabled):hover {
+      background-position: right center;
+      box-shadow: 0 0 25px theme('colors.accent / 60%');
+  }
+  .af-button--destructive { @apply af-bg-red-500 af-text-text-hi hover:af-bg-red-600; }
+  .af-button--secondary { @apply af-bg-panel af-text-text-hi hover:af-bg-surface af-border af-border-line; }
+  .af-button--ghost { @apply af-text-text-hi hover:af-bg-surface; }
+
+  /* Stagger Animation Utility */
+  .stagger-children > * {
+    opacity: 0;
+    animation: slideInUp 500ms theme('transitionTimingFunction.custom-ease') forwards;
+  }
+  .stagger-children > *:nth-child(1) { animation-delay: 100ms; }
+  .stagger-children > *:nth-child(2) { animation-delay: 200ms; }
+  .stagger-children > *:nth-child(3) { animation-delay: 300ms; }
+  .stagger-children > *:nth-child(4) { animation-delay: 400ms; }
+  .stagger-children > *:nth-child(5) { animation-delay: 500ms; }
+  .stagger-children > *:nth-child(6) { animation-delay: 600ms; }
+  .stagger-children > *:nth-child(7) { animation-delay: 700ms; }
+  .stagger-children > *:nth-child(8) { animation-delay: 800ms; }
+  .stagger-children > *:nth-child(9) { animation-delay: 900ms; }
 }

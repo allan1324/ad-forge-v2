@@ -11,6 +11,8 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <div id="adforge-root">
+      <App />
+    </div>
   </React.StrictMode>
 );

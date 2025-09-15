@@ -1,14 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { AdKitData, AppStep } from './types';
+import { AdKitData } from './types';
 import { generateAdKit } from './services/geminiService';
 import InputForm from './components/InputForm';
 import AdKitDisplay from './components/AdKitDisplay';
-import Loader from './components/Loader';
-import { Header } from './components/Header';
 import { ApiKeyBanner } from './components/ApiKeyBanner';
-import { Alert, AlertDescription, AlertTitle } from './components/ui/Alert';
+import { Alert, AlertDescription } from './components/ui/Alert';
+import { TopBar } from './components/TopBar';
+import { EmptyState } from './components/ui/EmptyState';
+import { Icons } from './components/ui/Icons';
+import { ExportSection } from './components/sections/ExportSection';
+import { Card } from './components/ui/Card';
+import { MobileNav } from './components/ui/MobileNav';
+import { AdKitDisplaySkeleton } from './components/AdKitDisplaySkeleton';
+import { Drawer } from './components/ui/Drawer';
 
-// Proxy configuration remains the same
+// Proxy fetching logic for overcoming CORS issues.
 interface ProxyConfig {
   url: string;
   options?: Omit<RequestInit, 'signal'>;
@@ -17,34 +23,53 @@ type ProxyProvider = (url:string) => ProxyConfig;
 const PROXY_PROVIDERS: ProxyProvider[] = [
     (url: string) => ({ url: `https://corsproxy.io/?${encodeURIComponent(url)}` }),
     (url: string) => ({ url: `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` }),
-    (url: string) => ({ url: `https://proxy.cors.sh/${url}` }),
-    (url: string) => ({ url: `https://cors.monster/${url}` }),
-    (url: string) => ({ url: `https://cors-proxy.fringe.zone/${url}` }),
-    (url: string) => ({ url: `https://thingproxy.freeboard.io/fetch/${url}` }),
+];
+
+const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(' ');
+
+interface NavItem {
+  id: string;
+  title: string;
+}
+
+const NAV_ITEMS: NavItem[] = [
+    { id: 'images', title: 'Property Images' },
+    { id: 'data', title: 'Extracted Data' },
+    { id: 'insights', title: 'Market Insights' },
+    { id: 'personas', title: 'Ad Copy' },
+    { id: 'video', title: 'Video Plan' },
+    { id: 'metrics', title: 'Investor Metrics' },
+    { id: 'staging', title: 'Staging & Prompts' },
+    { id: 'platforms', title: 'Social Packs' },
+    { id: 'seo', title: 'SEO' },
 ];
 
 const App: React.FC = () => {
-  const [step, setStep] = useState<AppStep>(AppStep.Input);
   const [adKitData, setAdKitData] = useState<AdKitData | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [loadingMessage, setLoadingMessage] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isApiKeyMissing, setIsApiKeyMissing] = useState<boolean>(false);
   
   const [propertyDescription, setPropertyDescription] = useState<string>('');
-  const [isFetchingUrl, setIsFetchingUrl] = useState<boolean>(false);
   const [propertyImageUrls, setPropertyImageUrls] = useState<string[]>([]);
-  const [fetchingProgress, setFetchingProgress] = useState(0);
-  const [fetchingStatusText, setFetchingStatusText] = useState('');
+  const [isFetchingUrl, setIsFetchingUrl] = useState<boolean>(false);
+  const [market, setMarket] = useState<string>('Nigeria');
+  const [currency, setCurrency] = useState<string>('NGN (₦)');
 
+  // State for sidebar interactions
+  const [favoritedPersonas, setFavoritedPersonas] = useState<string[]>([]);
+  const [activeSection, setActiveSection] = useState('images');
+  const [isInputDrawerOpen, setIsInputDrawerOpen] = useState(false);
+  
   useEffect(() => {
-    if (!process.env.API_KEY) {
-      setIsApiKeyMissing(true);
-    }
+    if (!process.env.API_KEY) setIsApiKeyMissing(true);
+    try {
+      const saved = localStorage.getItem('favoritedPersonas');
+      if (saved) setFavoritedPersonas(JSON.parse(saved));
+    } catch (e) { console.error("Failed to parse favorites"); }
   }, []);
 
   const handleUrlFetch = async (url: string) => {
-    // URL Fetching logic remains unchanged
     if (!url.startsWith('http')) {
       setError("Please enter a valid URL (e.g., https://example.com)");
       return;
@@ -53,145 +78,215 @@ const App: React.FC = () => {
     setError(null);
     setPropertyDescription('');
     setPropertyImageUrls([]);
-    setFetchingProgress(0);
 
-    let lastError: Error | null = null;
-    const specificErrorMessages: string[] = [];
-
-    for (let i = 0; i < PROXY_PROVIDERS.length; i++) {
-      const provider = PROXY_PROVIDERS[i];
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-      const { url: proxyUrl, options = {} } = provider(url);
-      const proxyHost = new URL(proxyUrl).hostname;
-      
-      setFetchingProgress((i + 1) / PROXY_PROVIDERS.length);
-      setFetchingStatusText(`Attempt ${i + 1}/${PROXY_PROVIDERS.length}: Trying via ${proxyHost}...`);
-      
+    for (const [index, provider] of PROXY_PROVIDERS.entries()) {
       try {
-        const response = await fetch(proxyUrl, { ...options, signal: controller.signal });
-        clearTimeout(timeoutId);
-
-        if (!response.ok) throw new Error(`Request failed with status: ${response.status} via ${proxyHost}.`);
-
+        const { url: proxyUrl, options = {} } = provider(url);
+        const response = await fetch(proxyUrl, options);
+        if (!response.ok) throw new Error(`Request failed with status: ${response.status}`);
+        
         const html = await response.text();
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
-
-        const imageUrls = new Set<string>();
-        doc.querySelectorAll('img').forEach(img => {
-          const src = img.getAttribute('data-src') || img.getAttribute('src');
-          if (src && !src.startsWith('data:') && !src.endsWith('.svg')) {
-            try { imageUrls.add(new URL(src, url).href); } catch (e) {}
-          }
-        });
         
-        const finalImageUrls = Array.from(imageUrls).slice(0, 10);
-        setPropertyImageUrls(finalImageUrls);
-
+        const imageUrls = Array.from(doc.querySelectorAll('img')).map(img => new URL(img.getAttribute('data-src') || img.src, url).href).slice(0, 10);
+        
         doc.querySelectorAll('script, style, link, nav, header, footer, aside').forEach(el => el.remove());
-        const bodyText = doc.body.textContent || '';
-        const cleanText = bodyText.split('\n').map(l => l.trim()).filter(l => l.length > 20).join('\n').replace(/\s{3,}/g, '\n\n');
+        const bodyText = (doc.body.textContent || '').replace(/\s{3,}/g, '\n\n').trim();
         
-        if (!cleanText.trim()) throw new Error("Extracted content was empty using this proxy.");
+        if (!bodyText) throw new Error("Extracted content was empty.");
         
-        setPropertyDescription(cleanText.trim());
-        setError(null);
+        setPropertyDescription(bodyText);
+        setPropertyImageUrls(imageUrls);
         setIsFetchingUrl(false);
-        setFetchingProgress(0);
-        setFetchingStatusText('');
         return;
-
-      } catch (e: any) {
-        clearTimeout(timeoutId);
-        lastError = e;
-        specificErrorMessages.push(e.message);
+      } catch (e) {
+        console.warn(`Fetch attempt ${index + 1} failed:`, e);
       }
     }
 
     setIsFetchingUrl(false);
-    setError("All attempts to fetch the URL failed. Please try a different URL or paste the content manually.");
+    setError("All URL fetch attempts failed. Please paste the content manually.");
   };
 
-  const handleGenerate = async (market: string, currency: string) => {
-    // Ad Kit generation logic remains unchanged
-    if (isApiKeyMissing) {
-      setError("API Key is missing. Please set it up in your environment variables.");
-      return;
-    }
-    if (!propertyDescription.trim()) {
-      setError("Property description cannot be empty. Fetch from a URL or enter it manually.");
-      return;
-    }
+  const handleGenerate = async () => {
+    if (isApiKeyMissing || !propertyDescription.trim() || isGenerating) return;
     
-    setIsLoading(true);
-    setError(null);
+    setIsInputDrawerOpen(false); // Close mobile drawer if open
+    setIsGenerating(true);
     setAdKitData(null);
-    const messages = ["Analyzing property details...","Scouting the neighborhood...","Running investment numbers...","Crafting compelling ad copy...","Finalizing the ad kit..."];
-    let messageIndex = 0;
-    setLoadingMessage(messages[messageIndex]);
-    const intervalId = setInterval(() => {
-        messageIndex = (messageIndex + 1) % messages.length;
-        setLoadingMessage(messages[messageIndex]);
-    }, 2500);
+    setError(null);
 
     try {
       const data = await generateAdKit(propertyDescription, market, currency);
       setAdKitData(data);
-      setStep(AppStep.AdKit);
+      document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (e: any) {
-      setError(`Failed to generate ad kit. ${e.message || 'Please try again.'}`);
-      setStep(AppStep.Input);
+      setError(`Failed to generate ad kit: ${e.message || 'Please try again.'}`);
+      setAdKitData(null);
     } finally {
-      clearInterval(intervalId);
-      setIsLoading(false);
+      setIsGenerating(false);
     }
   };
 
-  const handleBack = useCallback(() => {
+  const handleStartOver = useCallback(() => {
     setAdKitData(null);
     setError(null);
-    setStep(AppStep.Input);
     setPropertyDescription('');
     setPropertyImageUrls([]);
+    setIsFetchingUrl(false);
   }, []);
+  
+  const handleToggleFavorite = (persona: string) => {
+    setFavoritedPersonas(prev => {
+      const newFavorites = prev.includes(persona) ? prev.filter(p => p !== persona) : [...prev, persona];
+      localStorage.setItem('favoritedPersonas', JSON.stringify(newFavorites));
+      return newFavorites;
+    });
+  };
 
-  const CurrentView = () => {
-    if (step === AppStep.AdKit && adKitData) {
-      return <AdKitDisplay data={adKitData} onBack={handleBack} imageUrls={propertyImageUrls} />;
+  const renderContent = () => {
+    if (isGenerating) {
+      return <AdKitDisplaySkeleton />;
     }
-    return <InputForm 
-              onGenerate={handleGenerate} 
-              disabled={isApiKeyMissing}
-              onUrlFetch={handleUrlFetch}
-              isFetchingUrl={isFetchingUrl}
-              propertyDescription={propertyDescription}
-              setPropertyDescription={setPropertyDescription}
-              propertyImageUrls={propertyImageUrls}
-              fetchingProgress={fetchingProgress}
-              fetchingStatusText={fetchingStatusText}
-            />;
-  }
+    if (error && !adKitData) {
+      return (
+        <div className="af-p-4">
+          <Alert variant="destructive" className="af-mb-6"><AlertDescription>{error}</AlertDescription></Alert>
+          <EmptyState
+            icon={<Icons.lightbulb className="af-h-8 af-w-8" />}
+            title="Generation Failed"
+            description="There was an error generating your ad kit. Please adjust your inputs or try again."
+          />
+        </div>
+      );
+    }
+    if (adKitData) {
+      return (
+        <AdKitDisplay
+          data={adKitData}
+          imageUrls={propertyImageUrls}
+          isApiKeyMissing={isApiKeyMissing}
+          favoritedPersonas={favoritedPersonas}
+          onToggleFavorite={handleToggleFavorite}
+          setActiveSection={setActiveSection}
+        />
+      );
+    }
+    return (
+       <div className="af-p-4">
+        <EmptyState
+          icon={<Icons.lightbulb className="af-h-8 af-w-8" />}
+          title="Your Ad Kit Awaits"
+          description="Use the panel on the left (or the 'Create' button on mobile) to provide property details."
+        />
+       </div>
+    );
+  };
+
+  const StickyNav: React.FC = () => (
+    <Card className="af-p-4">
+      <h3 className="af-font-semibold af-text-text-hi af-mb-3">Sections</h3>
+      <ul className="af-space-y-1">
+        {NAV_ITEMS.map(item => (
+          <li key={item.id}>
+            <a href={`#${item.id}`} className={cn(
+              'af-block af-transition-all af-duration-200 af-rounded-md af-px-3 af-py-2 af-text-sm af-relative',
+              activeSection === item.id
+                ? 'af-text-accent af-bg-accent/10'
+                : 'af-text-text-lo hover:af-text-text-hi hover:af-bg-surface/50'
+            )}>
+              {activeSection === item.id && <span className="af-absolute af-left-0 af-top-1/2 -af-translate-y-1/2 af-h-5 af-w-1 af-bg-accent af-rounded-r-full" />}
+              {item.title}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+
+  const FavoritesSection: React.FC = () => {
+      if (!adKitData?.personaVariants) return null;
+      const favoritedVariants = adKitData.personaVariants.filter(v => favoritedPersonas.includes(v.persona));
+      if (favoritedVariants.length === 0) return null;
+
+      return (
+        <Card className="af-p-4">
+          <h3 className="af-font-semibold af-text-text-hi af-mb-3 af-flex af-items-center af-gap-2">
+            <Icons.starSolid className="af-text-yellow-400 af-h-5 af-w-5" />
+            Favorited Ad Copy
+          </h3>
+          <div className="af-space-y-3">
+            {favoritedVariants.map((variant) => (
+              <div key={variant.persona} className="af-bg-surface af-p-3 af-rounded-md af-relative af-text-sm af-border af-border-line">
+                <p className="af-font-bold af-text-accent/80">{variant.persona}</p>
+                <p className="af-text-text-lo af-mt-1 af-whitespace-pre-wrap">{variant.headline}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      );
+  };
+
+  const inputFormProps = {
+    onGenerate: handleGenerate,
+    disabled: isApiKeyMissing || isGenerating,
+    onUrlFetch: handleUrlFetch,
+    isFetchingUrl,
+    propertyDescription,
+    setPropertyDescription,
+    market,
+    setMarket,
+    currency,
+    setCurrency,
+  };
 
   return (
-    <div className="min-h-screen">
-      <Header />
-      <main className="container mx-auto px-4 py-8 md:py-12">
-        {isApiKeyMissing && <ApiKeyBanner />}
-        {isLoading && <Loader message={loadingMessage} />}
+    <div className="af-flex af-flex-col af-h-screen">
+      <header className="af-flex-shrink-0 af-bg-ink/50 af-backdrop-blur-xl af-border-b af-border-line/50 af-sticky af-top-0 af-z-40">
+        <TopBar 
+          onGenerate={handleGenerate}
+          canGenerate={!!propertyDescription.trim() && !isApiKeyMissing && !isGenerating}
+          onBack={handleStartOver}
+          showBack={!!adKitData || !!error}
+          onOpenInput={() => setIsInputDrawerOpen(true)}
+        />
+      </header>
+      {isApiKeyMissing && <ApiKeyBanner />}
+      <div className="af-flex-grow af-grid af-grid-cols-1 lg:af-grid-cols-12 af-gap-x-8 af-overflow-hidden">
         
-        {!isLoading && error && (
-          <Alert variant="destructive" className="mb-6 max-w-4xl mx-auto">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        
-        <div className={`transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
-          <CurrentView />
-        </div>
-      </main>
+        {/* Left Panel: Inputs (Desktop) */}
+        <aside className="af-hidden lg:af-block lg:af-col-span-4 xl:af-col-span-3 af-overflow-y-auto af-p-6">
+          <InputForm {...inputFormProps} />
+        </aside>
+
+        {/* Center Panel: Content */}
+        <main id="main-content" className="lg:af-col-span-8 xl:af-col-span-6 af-overflow-y-auto af-py-6">
+          <div className="af-container !af-py-0">
+             {renderContent()}
+          </div>
+        </main>
+
+        {/* Right Panel: Sidebar */}
+        <aside className="af-hidden xl:af-block xl:af-col-span-3 af-overflow-y-auto af-p-6">
+            {adKitData && (
+              <div className="af-space-y-6 lg:af-sticky af-top-24">
+                  <ExportSection data={adKitData} />
+                  <StickyNav />
+                  <FavoritesSection />
+              </div>
+            )}
+        </aside>
+      </div>
+
+      {/* Mobile Input Drawer */}
+      <Drawer isOpen={isInputDrawerOpen} onClose={() => setIsInputDrawerOpen(false)} title="Create Ad Kit">
+          <div className="af-p-4">
+            <InputForm {...inputFormProps} />
+          </div>
+      </Drawer>
+
+      {adKitData && <MobileNav navItems={NAV_ITEMS} activeSection={activeSection} />}
     </div>
   );
 };

@@ -1,13 +1,10 @@
-
-
-
-// FIX: Import useState from React
-import React, { useState } from 'react';
+import React from 'react';
 import { PersonaVariant } from '../../types';
 import { Accordion } from '../ui/Accordion';
 import { Icons } from '../ui/Icons';
 import { CopyButton } from '../ui/CopyButton';
 import { Tooltip } from '../ui/Tooltip';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/Tabs';
 
 interface PersonaVariantsSectionProps {
   variants: PersonaVariant[];
@@ -16,13 +13,9 @@ interface PersonaVariantsSectionProps {
 }
 
 export const PersonaVariantsSection: React.FC<PersonaVariantsSectionProps> = ({ variants, favoritedPersonas, onToggleFavorite }) => {
-  const [activeTab, setActiveTab] = useState(0);
-
   if (!variants || variants.length === 0) {
       return null;
   }
-
-  const activeVariant = variants[activeTab];
 
   const copyAllText = (variant: PersonaVariant) => {
     return `
@@ -34,89 +27,93 @@ CTA: ${variant.cta}
 Hashtags: ${variant.hashtags.join(' ')}
     `.trim();
   };
-  
-  const isFavorited = activeVariant && favoritedPersonas.includes(activeVariant.persona);
 
   return (
     <Accordion 
         id="personas"
         title={
-            <div className="flex items-center gap-2">
+            <div className="af-flex af-items-center af-gap-2">
                 <span>Persona-Based Ad Copy</span>
                 <Tooltip content="Tailored ad copy targeting different potential buyer profiles (e.g., first-time homebuyers, investors) to increase engagement.">
-                    <Icons.info className="h-4 w-4 text-slate-400 cursor-help" />
+                    <Icons.info className="af-h-4 af-w-4 af-text-text-lo af-cursor-help" />
                 </Tooltip>
             </div>
         }
         icon={<Icons.users />} 
         defaultOpen={true}
     >
-        <div className="p-1.5 bg-slate-800/50 rounded-lg flex flex-wrap sm:flex-nowrap gap-1.5 overflow-x-auto mb-4">
-            {variants.map((variant, index) => (
-            <button
-                key={index}
-                onClick={() => setActiveTab(index)}
-                className={`flex-1 sm:flex-none py-2 px-4 text-sm font-medium rounded-md transition whitespace-nowrap ${
-                activeTab === index
-                    ? 'bg-slate-700 text-white shadow'
-                    : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'
-                }`}
-            >
-                {variant.persona}
-            </button>
-            ))}
-        </div>
-        
-        {activeVariant && (
-            <div className="space-y-4 relative p-4 bg-slate-900/50 rounded-lg">
-                <div className="absolute top-2 right-12 flex items-center gap-2" title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}>
-                    <button
-                        onClick={() => onToggleFavorite(activeVariant.persona)}
-                        className="p-2 rounded-full hover:bg-slate-700/50 transition-colors"
-                        aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-                    >
-                        {isFavorited ? (
-                            <Icons.starSolid className="h-6 w-6 text-yellow-400" />
-                        ) : (
-                            <Icons.star className="h-6 w-6 text-slate-400 hover:text-yellow-400" />
-                        )}
-                    </button>
-                </div>
-
-                <CopyButton textToCopy={copyAllText(activeVariant)} />
-                <div className="relative p-3 bg-slate-800/50 rounded-lg">
-                    <CopyButton textToCopy={activeVariant.hook} />
-                    <p className="text-xs text-slate-400 uppercase tracking-wider">Hook</p>
-                    <p className="text-indigo-300 font-semibold pr-10">{activeVariant.hook}</p>
-                </div>
-                <div className="relative p-3 bg-slate-800/50 rounded-lg">
-                    <CopyButton textToCopy={activeVariant.headline} />
-                    <p className="text-xs text-slate-400 uppercase tracking-wider">Headline</p>
-                    <p className="font-bold text-lg pr-10">{activeVariant.headline}</p>
-                </div>
-                 <div className="relative p-3 bg-slate-800/50 rounded-lg">
-                    <CopyButton textToCopy={activeVariant.primaryText} />
-                    <p className="text-xs text-slate-400 uppercase tracking-wider">Primary Text</p>
-                    <p className="text-slate-300 whitespace-pre-wrap pr-10">{activeVariant.primaryText}</p>
-                </div>
-                 <div className="relative p-3 bg-slate-800/50 rounded-lg">
-                    <CopyButton textToCopy={activeVariant.cta} />
-                    <p className="text-xs text-slate-400 uppercase tracking-wider">Call to Action (CTA)</p>
-                    <p className="font-semibold text-white pr-10">{activeVariant.cta}</p>
-                </div>
-                <div className="relative">
-                    <CopyButton textToCopy={activeVariant.hashtags.join(' ')} />
-                    <h5 className="text-xs text-slate-400 uppercase tracking-wider mb-2">Hashtags</h5>
-                    <div className="flex flex-wrap gap-2 pr-10">
-                    {activeVariant.hashtags.map((tag, index) => (
-                        <span key={index} className="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded">
-                        {tag}
-                        </span>
-                    ))}
-                    </div>
-                </div>
-            </div>
-        )}
+      <Tabs defaultValue={variants[0].persona}>
+        <TabsList>
+          {variants.map(v => <TabsTrigger key={v.persona} value={v.persona}>{v.persona}</TabsTrigger>)}
+        </TabsList>
+        {variants.map(variant => {
+          const isFavorited = favoritedPersonas.includes(variant.persona);
+          return (
+            <TabsContent key={variant.persona} value={variant.persona} className="af-space-y-4 af-p-4 af-bg-surface af-border af-border-line af-rounded-lg">
+              <div className="af-flex af-justify-end af-items-center af-gap-2">
+                <Tooltip content="Copy all text for this persona">
+                  <CopyButton textToCopy={copyAllText(variant)} />
+                </Tooltip>
+                <Tooltip content={isFavorited ? 'Remove from favorites' : 'Add to favorites'}>
+                  <button
+                      onClick={() => onToggleFavorite(variant.persona)}
+                      className="af-p-2 af-rounded-full hover:af-bg-panel af-transition-colors"
+                      aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                  >
+                      {isFavorited ? (
+                          <Icons.starSolid className="af-h-5 af-w-5 af-text-yellow-400" />
+                      ) : (
+                          <Icons.star className="af-h-5 af-w-5 af-text-text-lo hover:af-text-yellow-400" />
+                      )}
+                  </button>
+                </Tooltip>
+              </div>
+              
+              <div className="af-group af-p-3 af-bg-panel af-rounded-lg af-border af-border-line">
+                  <div className="af-flex af-justify-between af-items-start">
+                    <p className="af-text-xs af-text-text-lo af-uppercase af-tracking-wider">Hook</p>
+                    <CopyButton textToCopy={variant.hook} className="-af-mr-1 -af-mt-1 af-opacity-0 group-hover:af-opacity-100 af-transition-opacity" />
+                  </div>
+                  <p className="af-text-accent af-font-semibold">{variant.hook}</p>
+              </div>
+              <div className="af-group af-p-3 af-bg-panel af-rounded-lg af-border af-border-line">
+                  <div className="af-flex af-justify-between af-items-start">
+                    <p className="af-text-xs af-text-text-lo af-uppercase af-tracking-wider">Headline</p>
+                    <CopyButton textToCopy={variant.headline} className="-af-mr-1 -af-mt-1 af-opacity-0 group-hover:af-opacity-100 af-transition-opacity" />
+                  </div>
+                  <p className="af-font-bold af-text-lg af-text-text-hi">{variant.headline}</p>
+              </div>
+               <div className="af-group af-p-3 af-bg-panel af-rounded-lg af-border af-border-line">
+                  <div className="af-flex af-justify-between af-items-start">
+                    <p className="af-text-xs af-text-text-lo af-uppercase af-tracking-wider">Primary Text</p>
+                    <CopyButton textToCopy={variant.primaryText} className="-af-mr-1 -af-mt-1 af-opacity-0 group-hover:af-opacity-100 af-transition-opacity" />
+                  </div>
+                  <p className="af-text-text-lo af-whitespace-pre-wrap">{variant.primaryText}</p>
+              </div>
+               <div className="af-group af-p-3 af-bg-panel af-rounded-lg af-border af-border-line">
+                  <div className="af-flex af-justify-between af-items-start">
+                    <p className="af-text-xs af-text-text-lo af-uppercase af-tracking-wider">Call to Action (CTA)</p>
+                    <CopyButton textToCopy={variant.cta} className="-af-mr-1 -af-mt-1 af-opacity-0 group-hover:af-opacity-100 af-transition-opacity" />
+                  </div>
+                  <p className="af-font-semibold af-text-text-hi">{variant.cta}</p>
+              </div>
+              <div className="af-group">
+                  <div className="af-flex af-justify-between af-items-start">
+                    <h5 className="af-text-xs af-text-text-lo af-uppercase af-tracking-wider af-mb-2">Hashtags</h5>
+                    <CopyButton textToCopy={variant.hashtags.join(' ')} className="-af-mr-1 -af-mt-1 af-opacity-0 group-hover:af-opacity-100 af-transition-opacity" />
+                  </div>
+                  <div className="af-flex af-flex-wrap af-gap-2">
+                  {variant.hashtags.map((tag, index) => (
+                      <span key={index} className="af-bg-badge af-text-accent af-text-xs af-px-2 af-py-1 af-rounded-full">
+                      {tag}
+                      </span>
+                  ))}
+                  </div>
+              </div>
+            </TabsContent>
+          )
+        })}
+      </Tabs>
     </Accordion>
   );
 };

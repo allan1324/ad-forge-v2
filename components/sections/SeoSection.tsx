@@ -14,31 +14,38 @@ export const SeoSection: React.FC<SeoSectionProps> = ({ data }) => {
     <Accordion 
         id="seo"
         title={
-            <div className="flex items-center gap-2">
+            <div className="af-flex af-items-center af-gap-2">
                 <span>SEO Snippets</span>
                 <Tooltip content="Search Engine Optimization content to help this property rank higher in online searches on platforms like Google.">
-                    <Icons.info className="h-4 w-4 text-slate-400 cursor-help" />
+                    <Icons.info className="af-h-4 af-w-4 af-text-text-lo af-cursor-help" />
                 </Tooltip>
             </div>
         }
         icon={<Icons.search />}
     >
-        <div className="space-y-4">
-            <div className="bg-slate-800/50 p-3 rounded-lg relative">
-                <CopyButton textToCopy={data.metaTitle} />
-                <h5 className="text-xs text-slate-400 uppercase tracking-wider">Meta Title</h5>
-                <p className="text-white">{data.metaTitle}</p>
+        <div className="af-space-y-4">
+            <div className="af-group af-bg-surface af-border af-border-line af-p-3 af-rounded-lg">
+                <div className="af-flex af-justify-between af-items-start">
+                    <h5 className="af-text-xs af-text-text-lo af-uppercase af-tracking-wider">Meta Title</h5>
+                    <CopyButton textToCopy={data.metaTitle} className="-af-mt-1 -af-mr-1 af-opacity-0 group-hover:af-opacity-100 af-transition-opacity" />
+                </div>
+                <p className="af-text-text-hi">{data.metaTitle}</p>
             </div>
-            <div className="bg-slate-800/50 p-3 rounded-lg relative">
-                <CopyButton textToCopy={data.metaDescription} />
-                <h5 className="text-xs text-slate-400 uppercase tracking-wider">Meta Description</h5>
-                <p className="text-slate-300">{data.metaDescription}</p>
+            <div className="af-group af-bg-surface af-border af-border-line af-p-3 af-rounded-lg">
+                <div className="af-flex af-justify-between af-items-start">
+                    <h5 className="af-text-xs af-text-text-lo af-uppercase af-tracking-wider">Meta Description</h5>
+                    <CopyButton textToCopy={data.metaDescription} className="-af-mt-1 -af-mr-1 af-opacity-0 group-hover:af-opacity-100 af-transition-opacity" />
+                </div>
+                <p className="af-text-text-lo">{data.metaDescription}</p>
             </div>
-            <div>
-                <h5 className="text-xs text-slate-400 uppercase tracking-wider mb-2">Keywords</h5>
-                <div className="flex flex-wrap gap-2">
+            <div className="af-group">
+                <div className="af-flex af-justify-between af-items-start af-mb-2">
+                    <h5 className="af-text-xs af-text-text-lo af-uppercase af-tracking-wider">Keywords</h5>
+                    <CopyButton textToCopy={data.keywords.join(', ')} className="af-opacity-0 group-hover:af-opacity-100 af-transition-opacity" />
+                </div>
+                <div className="af-flex af-flex-wrap af-gap-2">
                 {data.keywords.map((keyword, index) => (
-                    <span key={index} className="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded">
+                    <span key={index} className="af-bg-panel af-border af-border-line af-text-text-lo af-text-xs af-px-2 af-py-1 af-rounded">
                         {keyword}
                     </span>
                 ))}

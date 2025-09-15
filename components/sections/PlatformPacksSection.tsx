@@ -11,16 +11,18 @@ interface PlatformPacksSectionProps {
 export const PlatformPacksSection: React.FC<PlatformPacksSectionProps> = ({ packs }) => {
   return (
     <Accordion title="Social Media Platform Packs" icon={<Icons.share />} id="platforms">
-        <div className="space-y-4">
+        <div className="af-space-y-4">
             {packs.map((pack, index) => (
-                <div key={index} className="bg-slate-800/50 p-4 rounded-lg">
-                    <div className="flex justify-between items-center mb-2">
-                        <h5 className="font-bold text-lg text-white">{pack.platform}</h5>
-                        <p className="text-xs text-slate-400">Limit: {pack.charLimit}</p>
+                <div key={index} className="af-bg-surface af-border af-border-line af-p-4 af-rounded-lg">
+                    <div className="af-flex af-justify-between af-items-center af-mb-2">
+                        <h5 className="af-font-bold af-text-lg af-text-text-hi">{pack.platform}</h5>
+                        <p className="af-text-xs af-text-text-lo">Limit: {pack.charLimit}</p>
                     </div>
-                    <div className="relative bg-slate-900/40 p-3 rounded-md border border-slate-700/50">
-                        <CopyButton textToCopy={pack.copy} />
-                        <p className="text-slate-300 whitespace-pre-wrap pr-10">{pack.copy}</p>
+                    <div className="af-group af-bg-panel af-p-3 af-rounded-md af-border af-border-line">
+                        <div className="af-flex af-justify-between af-items-start">
+                            <p className="af-text-text-lo af-whitespace-pre-wrap af-flex-1">{pack.copy}</p>
+                            <CopyButton textToCopy={pack.copy} className="af-opacity-0 group-hover:af-opacity-100 af-transition-opacity" />
+                        </div>
                     </div>
                 </div>
             ))}
